@@ -158,7 +158,7 @@ export default function neuViteCreateCommand(_command: Command, modules: NeuPlug
     // 5. Ask about opening app after creation
     if (data.installDependencies) {
       const openApp = await prompts.confirm({
-        message: 'Open the project in your code editor after creation?',
+        message: 'Start the app after creation?',
       });
 
       if (prompts.isCancel(openApp)) return cancel()

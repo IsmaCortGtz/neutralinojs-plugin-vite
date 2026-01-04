@@ -129,33 +129,3 @@ The plugin adds a `vite` section under `cli` in `neutralino.config.json`:
 ## License
 
 This project is licensed under the MIT License.
-
-React
- - TypeScript (react-ts)
- - TypeScript + React Compiler (react-compiler-ts)
- - TypeScript + SWC (react-swc-ts)
- - JavaScript (react)
- - JavaScript + React Compiler (react-compiler)
- - JavaScript + SWC (react-swc)
-Vue
- - JavaScript (vue)
- - TypeScript (vue-ts)
-Preact
- - TypeScript (preact-ts)
- - JavaScript (preact)
-Lit
- - TypeScript (lit-ts)
- - JavaScript (lit)
-Svelte
- - TypeScript (svelte-ts)
- - JavaScript (svelte)
- - SvelteKit
-   - TypeScript (ts)
-   - JSDoc (jsdoc)
-   - JavaScript (no-types)
-Solid
- - TypeScript (solid-ts)
- - JavaScript (solid)
-Qwik
- - TypeScript (qwik-ts)
- - JavaScript (qwik)

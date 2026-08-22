@@ -13,25 +13,19 @@
   ],
   "modes": {
     "window": {
-      "title": "myapp",
+      "title": "voice-generator",
       "width": 800,
       "height": 500,
-      "minWidth": 400,
-      "minHeight": 200,
-      "center": true,
-      "icon": "/vite-src/public/vite.svg",
-      "enableInspector": true,
-      "openInspectorOnStartup": false,
-      "resizable": true,
       "exitProcessOnClose": true
     }
   },
   "cli": {
-    "binaryName": "myapp",
+    "binaryName": "voice-generator",
     "resourcesPath": "/vite-src/dist/",
     "extensionsPath": "/extensions/",
     "vite": {
       "projectPath": "/vite-src/"
-    }
+    },
+    "binaryVersion": "6.9.0"
   }
 }

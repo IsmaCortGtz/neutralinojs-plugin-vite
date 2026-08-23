@@ -8,13 +8,17 @@ export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
 const KNOWN_PACKAGE_MANAGERS: PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun'];
 
-/** Resolves the configured package manager, falling back to "npm". */
-export function resolvePackageManager(config: unknown): PackageManager {
-  const raw = (config as any)?.cli?.vite?.packageManager;
-  const name = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+/** Normalizes a raw package manager value, or null when it is not a known one. */
+export function normalizePackageManager(value: unknown): PackageManager | null {
+  const name = typeof value === 'string' ? value.trim().toLowerCase() : '';
   return (KNOWN_PACKAGE_MANAGERS as string[]).includes(name)
     ? (name as PackageManager)
-    : 'npm';
+    : null;
+}
+
+/** Resolves the configured package manager, falling back to "npm". */
+export function resolvePackageManager(config: unknown): PackageManager {
+  return normalizePackageManager((config as any)?.cli?.vite?.packageManager) ?? 'npm';
 }
 
 /** Dependency installation command for each package manager. */

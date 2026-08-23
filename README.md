@@ -59,6 +59,44 @@ This will start an interactive wizard that guides you through the project setup:
 > setting of the freshly generated `neutralino.config.json` (defaults to `npm`).
 > See [Package Manager](#package-manager).
 
+#### Non-interactive (CI) usage
+
+Every wizard choice can be provided as a flag instead, so the command runs
+without any prompt — ideal for scripts and CI pipelines:
+
+```bash
+neu vite create my-app --template react-ts --install
+```
+
+| Flag | Description |
+|---|---|
+| `[projectName]` | Project directory name (first positional argument) |
+| `-t, --template <id>` | Template id to scaffold (see below) |
+| `--pm <manager>` | Package manager: `npm`, `pnpm`, `yarn` or `bun` |
+| `--install` / `--no-install` | Install dependencies (`neu update` + manager install) |
+| `--open` / `--no-open` | Start the dev server after creation (requires `--install`) |
+| `--force` | Remove existing files when the target directory is not empty |
+
+Any choice left out falls back to its interactive prompt. The only situation
+that still requires interaction is a non-empty target directory without
+`--force`.
+
+Available template ids:
+
+| Framework | Ids |
+|---|---|
+| React | `react-ts`, `react-compiler-ts`, `react-swc-ts`, `react`, `react-compiler`, `react-swc` |
+| Vue | `vue-ts`, `vue` |
+| Svelte | `svelte-ts`, `svelte` |
+| SvelteKit | `sveltekit-ts`, `sveltekit-jsdoc`, `sveltekit-js` |
+| Solid | `solid-ts`, `solid` |
+| Preact | `preact-ts`, `preact` |
+| Lit | `lit-ts`, `lit` |
+| Qwik | `qwik-ts`, `qwik` |
+
+Invalid values for `--template` or `--pm` fail fast with exit code 1 and list
+the valid options, and `--open` combined with `--no-install` is rejected.
+
 ### Building the Application
 
 To build your application (Vite build + Neutralinojs bundling) in one step:

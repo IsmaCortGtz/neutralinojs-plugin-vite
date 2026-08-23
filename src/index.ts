@@ -16,9 +16,18 @@ export default {
       .option('--arch <arch>', 'Specify the architecture for Neutralinojs (e.g., x64, arm64)')
       .action(neuViteDevCommand(command, modules));
     
+    // NOTE: keep the command API compatible with the CLI's bundled
+    // commander (currently v7): no .argument(), no .choices().
     command
-      .command('create')
+      .command('create [projectName]')
       .description('Create a new Neutralinojs project with Vite setup')
+      .option('-t, --template <id>', 'template to scaffold (e.g. react-ts, vue-ts, sveltekit-ts)')
+      .option('--pm <manager>', 'package manager to use: npm, pnpm, yarn or bun')
+      .option('--install', 'install dependencies (runs "neu update" and the package manager install)')
+      .option('--no-install', 'skip dependency installation')
+      .option('--open', 'start the dev server after creation (requires --install)')
+      .option('--no-open', 'do not start the dev server after creation')
+      .option('--force', 'remove existing files when the target directory is not empty')
       .action(neuViteCreateCommand(command, modules));
 
     command

@@ -1,4 +1,4 @@
-import type { TemplateVariant } from '@/types';
+import type { TemplateInstaller, TemplateVariant } from '@/types';
 import c from 'picocolors';
 
 const frameworks: TemplateVariant[] = [
@@ -186,9 +186,52 @@ const frameworks: TemplateVariant[] = [
   }
 ];
 
-export default { 
+export default {
   name: '',
   display: '',
   color: c.reset,
   variants: frameworks
+}
+
+/**
+ * CLI-facing template ids for every selectable leaf of the tree.
+ *
+ * Leaf names are unique across the tree, except for the SvelteKit ones
+ * ("ts", "jsdoc", "no-types"), which are too generic to be exposed as-is;
+ * they get a "sveltekit-" prefix instead ("no-types" becomes "sveltekit-js").
+ */
+function cliTemplateId(leaf: TemplateVariant): string {
+  return leaf.installer === 'sv'
+    ? `sveltekit-${leaf.name === 'no-types' ? 'js' : leaf.name}`
+    : leaf.name;
+}
+
+function collectLeaves(node: TemplateVariant, acc: Array<{ id: string; leaf: TemplateVariant }> = []) {
+  if (!node.variants?.length) {
+    acc.push({ id: cliTemplateId(node), leaf: node });
+    return acc;
+  }
+  node.variants.forEach((child) => collectLeaves(child, acc));
+  return acc;
+}
+
+const leaves = frameworks.reduce<Array<{ id: string; leaf: TemplateVariant }>>(
+  (acc, framework) => collectLeaves(framework, acc),
+  [],
+);
+
+export interface ResolvedTemplate {
+  variant: TemplateVariant;
+  installer: TemplateInstaller;
+}
+
+/** Resolves a CLI template id (e.g. "react-ts", "sveltekit-ts") or null when unknown. */
+export function resolveTemplate(id: string): ResolvedTemplate | null {
+  const match = leaves.find((entry) => entry.id === id.trim().toLowerCase());
+  return match ? { variant: match.leaf, installer: match.leaf.installer || 'vite' } : null;
+}
+
+/** All valid CLI template ids. */
+export function listTemplates(): string[] {
+  return leaves.map((entry) => entry.id);
 }

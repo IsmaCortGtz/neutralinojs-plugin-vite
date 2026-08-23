@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  normalizePackageManager,
   resolvePackageManager,
   installCommand,
   execCommandFor,
@@ -30,6 +31,19 @@ describe('resolvePackageManager()', () => {
   it('falls back to npm when packageManager is not a string', () => {
     expect(resolvePackageManager({ cli: { vite: { packageManager: 42 } } })).toBe('npm');
   });
+});
+
+describe('normalizePackageManager()', () => {
+  it.each(['npm', ' pnpm ', 'YARN', 'Bun'] as const)('normalizes %j to a known manager', (raw) => {
+    expect(normalizePackageManager(raw)).toBe(raw.trim().toLowerCase() as never);
+  });
+
+  it.each(['npm9', 'conda', '', '   ', null, undefined, 42, {}])(
+    'returns null for invalid value %j',
+    (invalid) => {
+      expect(normalizePackageManager(invalid)).toBeNull();
+    },
+  );
 });
 
 describe('installCommand()', () => {

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { findPort } from '@/utils/findPort';
 import { log, error, warn, raw, icon, clear } from '@/utils/log';
 import { getFiglet, printHeader } from '@/utils/art';
+import { listTemplates, resolveTemplate } from '@/utils/templates';
 import {
   captureConsole,
   cleanupTempDirs,
@@ -107,5 +108,42 @@ describe('art utils', () => {
     } finally {
       cons.restore();
     }
+  });
+});
+
+describe('resolveTemplate()', () => {
+  it('resolves vite leaf ids to their variant and the vite installer', () => {
+    expect(resolveTemplate('react-ts')).toMatchObject({ installer: 'vite' });
+    expect(resolveTemplate('react-ts')!.variant.name).toBe('react-ts');
+    expect(resolveTemplate('vue')).toMatchObject({ installer: 'vite' });
+  });
+
+  it('is case and whitespace tolerant', () => {
+    expect(resolveTemplate('  React-TS ')!.variant.name).toBe('react-ts');
+  });
+
+  it.each(['sveltekit-ts', 'sveltekit-jsdoc', 'sveltekit-js'])(
+    'maps %s to the sv installer with a raw sv variant',
+    (id) => {
+      const resolved = resolveTemplate(id)!;
+      expect(resolved.installer).toBe('sv');
+      expect(['ts', 'jsdoc', 'no-types']).toContain(resolved.variant.name);
+    },
+  );
+
+  it('returns null for unknown, framework-level or empty ids', () => {
+    expect(resolveTemplate('nope')).toBeNull();
+    expect(resolveTemplate('react-framework')).toBeNull();
+    // framework nodes themselves are not selectable
+    expect(resolveTemplate('sveltekit')).toBeNull();
+    expect(resolveTemplate('')).toBeNull();
+  });
+
+  it('exposes unique ids covering every selectable leaf', () => {
+    const ids = listTemplates();
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(resolveTemplate(id)).not.toBeNull();
+    expect(ids).toContain('react-ts');
+    expect(ids).toContain('sveltekit-ts');
   });
 });

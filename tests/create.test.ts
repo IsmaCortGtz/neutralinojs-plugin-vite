@@ -24,7 +24,7 @@ vi.mock('@/modules/create', async (importOriginal) => {
 import * as prompts from '@clack/prompts';
 import neuViteCreateCommand from '@/commands/create';
 import { createProject } from '@/modules/create';
-import { cleanupTempDirs, makeModules, makeTempDir, writeFile } from './helpers';
+import { cleanupTempDirs, makeModules, makeTempDir, withStubs, writeFile } from './helpers';
 
 const stubInstaller = vi.hoisted(() => ({
   scaffold: vi.fn().mockResolvedValue(undefined),
@@ -60,18 +60,20 @@ function resetPromptFlow(answers: {
   openApp?: boolean;
 }) {
   vi.clearAllMocks();
-  mockedPrompts.text.mockResolvedValue(answers.name ?? 'demo-app' as never);
+  // mockReset (not just clear) so leftover mockResolvedValueOnce queues
+  // from previous tests cannot bleed into the current scenario
+  mockedPrompts.text.mockReset().mockResolvedValue(answers.name ?? 'demo-app' as never);
   const selectionQueue = [...(answers.selections ?? [])];
-  mockedPrompts.select.mockImplementation(async () => selectionQueue.shift() ?? CANCEL);
-  mockedPrompts.confirm
+  mockedPrompts.select.mockReset().mockImplementation(async () => selectionQueue.shift() ?? CANCEL);
+  mockedPrompts.confirm.mockReset()
     .mockResolvedValueOnce(answers.installDependencies ?? false)
     .mockResolvedValueOnce(answers.openApp ?? false);
 }
 
-function runCommand(modulesConfig: unknown = {}) {
+function runCommand(modulesConfig: unknown = {}, options: Record<string, unknown> = {}, projectName?: string) {
   const modules = makeModules(modulesConfig);
   const action = neuViteCreateCommand({} as never, modules);
-  return action({} as never);
+  return action(projectName, options as never);
 }
 
 describe('neu vite create (interactive flow)', () => {
@@ -95,7 +97,7 @@ describe('neu vite create (interactive flow)', () => {
     const modules = makeModules({ cli: { vite: { packageManager: 'bun' } } });
     const action = neuViteCreateCommand({} as never, modules);
 
-    await action({} as never);
+    await action(undefined, {});
 
     expect(createProjectMock).toHaveBeenCalledTimes(1);
     const data = createProjectMock.mock.calls[0][0];
@@ -145,6 +147,111 @@ describe('neu vite create (interactive flow)', () => {
 
     expect(createProjectMock).not.toHaveBeenCalled();
     expect(mockedPrompts.cancel).toHaveBeenCalledWith('Operation cancelled');
+  });
+});
+
+describe('neu vite create (flag-driven / CI flow)', () => {
+  afterEach(() => {
+    process.chdir(originalCwd);
+    cleanupTempDirs();
+    vi.restoreAllMocks();
+  });
+
+  it('scaffolds without any prompt when every choice is provided via flags', async () => {
+    resetPromptFlow({});
+
+    await runCommand({ cli: { vite: { packageManager: 'npm' } } }, {
+      template: 'react-ts',
+      install: true,
+      open: false,
+      pm: 'pnpm',
+    }, 'ci-app');
+
+    expect(mockedPrompts.text).not.toHaveBeenCalled();
+    expect(mockedPrompts.select).not.toHaveBeenCalled();
+    expect(mockedPrompts.confirm).not.toHaveBeenCalled();
+
+    const data = createProjectMock.mock.calls[0][0];
+    expect(data.projectName).toBe('ci-app');
+    expect(data.packageName).toBe('ci-app');
+    expect(data.variant).toBe('react-ts');
+    expect(data.installer).toBe('vite');
+    expect(data.installDependencies).toBe(true);
+    expect(data.openAppAfterCreation).toBe(false);
+    expect(data.packageManager).toBe('pnpm');
+  });
+
+  it('maps sveltekit template ids to the sv installer and its raw variant', async () => {
+    resetPromptFlow({});
+
+    await runCommand({}, { template: 'sveltekit-ts', install: false }, 'sk-app');
+
+    const data = createProjectMock.mock.calls[0][0];
+    expect(data.variant).toBe('ts');
+    expect(data.installer).toBe('sv');
+    expect(mockedPrompts.confirm).not.toHaveBeenCalled(); // --no-install skips the install prompt
+  });
+
+  it('prompts only for the choices not provided via flags', async () => {
+    // name given, template given -> install + open are still prompted
+    resetPromptFlow({ installDependencies: true });
+
+    await runCommand({}, { template: 'vue-ts' }, 'half-flagged');
+
+    expect(mockedPrompts.text).not.toHaveBeenCalled();
+    expect(mockedPrompts.select).not.toHaveBeenCalled();
+    expect(mockedPrompts.confirm).toHaveBeenCalledTimes(2);
+
+    const data = createProjectMock.mock.calls[0][0];
+    expect(data.installDependencies).toBe(true);
+    expect(data.openAppAfterCreation).toBe(false);
+    expect(mockedPrompts.confirm.mock.calls[0][0]).toMatchObject({ message: 'Install dependencies after project creation?' });
+    expect(mockedPrompts.confirm.mock.calls[1][0]).toMatchObject({ message: 'Start the app after creation?' });
+  });
+
+  it('fails fast on an unknown template before prompting', async () => {
+    resetPromptFlow({});
+    const { exitCalls, logs } = await withStubs(() =>
+      runCommand({}, { template: 'nope' }, 'app').catch(() => {}),
+    );
+
+    expect(exitCalls[0]).toBe(1);
+    expect(logs.join('\n')).toMatch(/Unknown template "nope"/);
+    expect(createProjectMock).not.toHaveBeenCalled();
+  });
+
+  it('fails fast on an unknown package manager before prompting', async () => {
+    resetPromptFlow({});
+    const { exitCalls } = await withStubs(() =>
+      runCommand({}, { pm: 'cargo' }, 'app').catch(() => {}),
+    );
+
+    expect(exitCalls[0]).toBe(1);
+    expect(createProjectMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects --open combined with --no-install', async () => {
+    resetPromptFlow({});
+    const { exitCalls } = await withStubs(() =>
+      runCommand({}, { open: true, install: false }, 'app').catch(() => {}),
+    );
+
+    expect(exitCalls[0]).toBe(1);
+    expect(createProjectMock).not.toHaveBeenCalled();
+  });
+
+  it('--force wipes a non-empty target directory without prompting', async () => {
+    const cwd = makeTempDir('neu-create-force-');
+    process.chdir(cwd);
+    fs.mkdirSync(path.join(cwd, 'ci-app'));
+    fs.writeFileSync(path.join(cwd, 'ci-app', 'stale.txt'), 'old');
+
+    resetPromptFlow({});
+    await runCommand({}, { template: 'vue-ts', install: false, force: true }, 'ci-app');
+
+    expect(mockedPrompts.select).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(cwd, 'ci-app', 'stale.txt'))).toBe(false);
+    expect(createProjectMock).toHaveBeenCalledTimes(1);
   });
 });
 

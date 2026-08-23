@@ -3,6 +3,7 @@ import { NeuPluginModules } from '@/types';
 import neuViteDevCommand from '@/commands/dev';
 import neuViteBuildCommand from '@/commands/build';
 import neuViteCreateCommand from './commands/create';
+import neuViteVersionCommand from './commands/version';
 
 export default {
   command: 'vite',
@@ -30,5 +31,10 @@ export default {
       .option('--clean')
       .option('--config-file <path>', 'specify the *.config.json file')
       .action(neuViteBuildCommand(command, modules));
+
+    command
+      .command('version')
+      .description('Show the plugin version and check for updates on npm')
+      .action(neuViteVersionCommand(command, modules));
   },
 };

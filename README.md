@@ -88,6 +88,21 @@ without invoking any specific package manager binary. It accepts the same flags 
 | `--clean` | Clean previous build files first |
 | `--config-file <path>` | Use an alternative configuration file |
 
+### Checking for Updates
+
+To see which plugin version you have and check whether a newer one was published on npm:
+
+```bash
+neu vite version
+```
+
+If an update is available, the command prints the exact steps to update:
+
+```bash
+neu plugins --remove neutralinojs-plugin-vite
+neu plugins --add neutralinojs-plugin-vite
+```
+
 ### Running the Development Server
 
 <img src="./docs/dev.gif" alt="neu vite dev" width="400" >

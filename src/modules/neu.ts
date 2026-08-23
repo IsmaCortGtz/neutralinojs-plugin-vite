@@ -6,7 +6,7 @@ import { spawn } from 'node:child_process';
 import { findPort } from '@/utils/findPort';
 import { log, error, icon } from '@/utils/log';
 import constants from '@/utils/constants';
-import { resolvePackageManager, runNeuCommand } from '@/utils/pm';
+import { installCommand, resolvePackageManager, runNeuCommand } from '@/utils/pm';
 
 export async function open(url: string, cwd: string = process.cwd(), packageManager?: ReturnType<typeof resolvePackageManager>) {
   // Open log files for stdout and stderr
@@ -48,6 +48,13 @@ export async function doctor(arch: string, config: any, cwd: string = process.cw
   const viteConfigExists = vitePath && fs.existsSync(path.join(cwd, vitePath));
   console.log(' ', icon(viteConfigExists), 'Vite project found and configured.', !viteConfigExists ? c.gray(`(set "cli.vite.projectPath" in ${constants.files.configFile}).`) : '  ');
 
+  const pm = resolvePackageManager(config);
+  const nodeModulesExists = Boolean(viteConfigExists) && fs.existsSync(path.join(cwd, vitePath, 'node_modules'));
+  console.log(' ', icon(nodeModulesExists), 'Vite project dependencies installed.', !nodeModulesExists ? c.gray(`(run "${installCommand(pm)}" inside "${vitePath}").`) : '  ');
+
+  const viteInstalled = nodeModulesExists && fs.existsSync(path.join(cwd, vitePath, 'node_modules', 'vite'));
+  console.log(' ', icon(viteInstalled), 'Vite dependency found.', nodeModulesExists && !viteInstalled ? c.gray('(add "vite" as a dependency of your Vite project).') : '  ');
+
   const platform = process.platform;
   const validPlatform = platform in constants.files.binaries;
   console.log(' ', icon(validPlatform), `Platform (${platform}) supported.`);
@@ -59,7 +66,7 @@ export async function doctor(arch: string, config: any, cwd: string = process.cw
   const binaryExists = validArch && fs.existsSync(path.join(cwd, 'bin', binaries[arch as keyof typeof binaries]));
   console.log(' ', icon(binaryExists), 'NeutralinoJS binary found.', !binaryExists ? c.gray('(run "neu update" to download it).') : '  ');
 
-  const passed = configExists && viteConfigExists && validPlatform && validArch && binaryExists;
+  const passed = configExists && viteConfigExists && nodeModulesExists && viteInstalled && validPlatform && validArch && binaryExists;
   if (passed) {
     console.log(c.green('\nAll pre-flight checks passed!'));
   } else {

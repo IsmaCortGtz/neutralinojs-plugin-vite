@@ -24,7 +24,7 @@ function makeValidProject() {
       vite: { projectPath: '/vite-src' },
     },
   }));
-  fs.mkdirSync(path.join(root, 'vite-src'));
+  fs.mkdirSync(path.join(root, 'vite-src', 'node_modules', 'vite'), { recursive: true });
   return { root };
 }
 
@@ -69,6 +69,40 @@ describe('doctor()', () => {
 
     expect(result).toBe(false);
     expect(cons.output()).toMatch(/cli\.vite\.projectPath/);
+  });
+
+  it('fails when the vite project dependencies are not installed', async () => {
+    const { root } = makeValidProject();
+    fs.rmSync(path.join(root, 'vite-src', 'node_modules'), { recursive: true });
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'neutralino.config.json'), 'utf8'));
+
+    const result = await doctor(process.arch, config, root);
+
+    expect(result).toBe(false);
+    expect(cons.output()).toMatch(/dependencies installed/);
+    expect(cons.output()).toMatch(/npm install/);
+  });
+
+  it('suggests the configured package manager in the install hint', async () => {
+    const { root } = makeValidProject();
+    fs.rmSync(path.join(root, 'vite-src', 'node_modules'), { recursive: true });
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'neutralino.config.json'), 'utf8'));
+    config.cli.vite.packageManager = 'pnpm';
+
+    await doctor(process.arch, config, root);
+
+    expect(cons.output()).toMatch(/pnpm install/);
+  });
+
+  it('fails when vite is missing even though dependencies are installed', async () => {
+    const { root } = makeValidProject();
+    fs.rmSync(path.join(root, 'vite-src', 'node_modules', 'vite'), { recursive: true });
+    const config = JSON.parse(fs.readFileSync(path.join(root, 'neutralino.config.json'), 'utf8'));
+
+    const result = await doctor(process.arch, config, root);
+
+    expect(result).toBe(false);
+    expect(cons.output()).toMatch(/add "vite" as a dependency/);
   });
 
   it('fails when the architecture is not supported', async () => {

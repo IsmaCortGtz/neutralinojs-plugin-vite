@@ -10,6 +10,10 @@ npm-debug.log*
 # Build files
 *.tgz
 
+# VitePress
+docs/.vitepress/cache
+docs/.vitepress/dist
+
 # OS generated files
 **/*/.DS_Store
 **/*/Thumbs.db

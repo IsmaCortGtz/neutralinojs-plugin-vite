@@ -1,6 +1,6 @@
 {
   "name": "neutralinojs-plugin-vite",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "license": "MIT",
   "author": "IsmaCortGtz",
   "type": "commonjs",
@@ -14,6 +14,9 @@
     "build:bundle": "rolldown -c",
     "build": "run-s build:ts build:bundle",
     "test": "vitest run",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs",
     "prepublishOnly": "run-s build"
   },
   "dependencies": {
@@ -26,9 +29,11 @@
   "devDependencies": {
     "@types/commander": "^2.12.5",
     "@types/node": "^26.2.0",
+    "markdown-it-github-alerts": "^1.0.1",
     "npm-run-all": "^4.1.5",
     "rolldown": "^1.2.5",
     "typescript": "^7.0.2",
+    "vitepress": "^1.6.4",
     "vitest": "^4.1.11"
   }
 }

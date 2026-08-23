@@ -8,13 +8,13 @@
     "declaration": true,
     "emitDeclarationOnly": true,
     "declarationDir": "./dist/types",
+    "rootDir": "./src",
 
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"]

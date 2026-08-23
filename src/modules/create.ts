@@ -8,6 +8,7 @@ import { startServer } from "./vite";
 import { printHeader } from "@/utils/art";
 import { clear } from "@/utils/log";
 import getInstaller from "./installers";
+import { installCommand, resolvePackageManager } from "@/utils/pm";
 
 
 export async function createProject(data: CreateData, modules: NeuPluginModules): Promise<void> {
@@ -33,7 +34,8 @@ export async function createProject(data: CreateData, modules: NeuPluginModules)
 
   
   // Copy Neutralino config files
-  const templateDir = path.join(__dirname, '..', 'template-neutralinojs');
+  const templateDir = process.env.NEUVITE_TEMPLATE_DIR
+    ?? path.join(__dirname, '..', 'template-neutralinojs');
   fs.readdirSync(templateDir).forEach(file => {
     fs.copyFileSync(path.join(templateDir, file), path.join(process.cwd(), file));
   });
@@ -58,20 +60,21 @@ export async function createProject(data: CreateData, modules: NeuPluginModules)
 
 
   // Install dependencies if requested
+  const packageManager = data.packageManager ?? resolvePackageManager(undefined);
   if (data.installDependencies) {
     // Install neu binaries
     prompts.log.step('Installing neu binaries...');
     execSync('neu update', { stdio: ['ignore', 'ignore', 'inherit'] });
 
-    // Install project dependencies
-    prompts.log.step('Installing project dependencies...');
-    execSync('npm install', { stdio: ['ignore', 'ignore', 'inherit'], cwd: targetDir });
+    // Install project dependencies with the configured package manager
+    prompts.log.step(`Installing project dependencies with ${packageManager}...`);
+    execSync(installCommand(packageManager), { stdio: ['ignore', 'ignore', 'inherit'], cwd: targetDir });
   } else {
     doneMessage += "Done. Now run:\n\n";
     doneMessage += c.dim(`    cd ${data.projectName}\n`);
     doneMessage += c.dim(`    neu update\n`);
     doneMessage += c.dim(`    cd ${path.basename(targetDir)}\n`);
-    doneMessage += c.dim('    npm install\n');
+    doneMessage += c.dim(`    ${installCommand(packageManager)}\n`);
   }
 
   // Start the app if requested

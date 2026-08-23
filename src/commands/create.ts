@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Frameworks from '@/utils/templates';
 import { printHeader } from "@/utils/art";
+import { resolvePackageManager } from "@/utils/pm";
 import { createProject } from "@/modules/create";
 
 const defaultTargetDir = 'neutralinojs-vite-app';
@@ -59,13 +60,14 @@ export default function neuViteCreateCommand(_command: Command, modules: NeuPlug
       placeholder: defaultTargetDir,
       defaultValue: defaultTargetDir,
       validate: (value) => {
-        return value.length === 0 || formatTargetDir(value).length > 0
+        const val = value ?? '';
+        return val.length === 0 || formatTargetDir(val).length > 0
           ? undefined
           : 'Invalid project name'
       },
     });
 
-    if (prompts.isCancel(projectName)) return cancel();
+    if (prompts.isCancel(projectName) || typeof projectName !== 'string') return cancel();
     data.projectName = formatTargetDir(projectName);
 
 
@@ -165,6 +167,8 @@ export default function neuViteCreateCommand(_command: Command, modules: NeuPlug
       data.openAppAfterCreation = openApp;
     }
 
+    // 6. Create the project
+    data.packageManager = resolvePackageManager(modules.config.get());
     await createProject(data, modules);
   };
 }

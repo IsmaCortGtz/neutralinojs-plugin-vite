@@ -54,6 +54,40 @@ This will start an interactive wizard that guides you through the project setup:
 3. **Install dependencies** - Optionally install dependencies after creation
 4. **Run the app** - Optionally run the application after creation (like `neu vite dev`)
 
+> [!NOTE]
+> Scaffolding and dependency installation respect the `cli.vite.packageManager`
+> setting of the freshly generated `neutralino.config.json` (defaults to `npm`).
+> See [Package Manager](#package-manager).
+
+### Building the Application
+
+To build your application (Vite build + Neutralinojs bundling) in one step:
+
+```bash
+neu vite build
+```
+
+This command is equivalent to:
+
+```bash
+cd vite-src/
+<package-manager> run build    # runs the "build" script from vite-src/package.json
+cd ..
+neu build
+```
+
+The Vite build script is read from `vite-src/package.json` and executed directly,
+without invoking any specific package manager binary. It accepts the same flags as `neu build`:
+
+| Flag | Description |
+|---|---|
+| `-r, --release` | Also generate a release ZIP |
+| `--embed-resources` | Embed resources into the binaries |
+| `--copy-storage` | Copy `.storage` into the bundle |
+| `--macos-bundle` | Create macOS app bundles (.app) |
+| `--clean` | Clean previous build files first |
+| `--config-file <path>` | Use an alternative configuration file |
+
 ### Running the Development Server
 
 <img src="./docs/dev.gif" alt="neu vite dev" width="400" >
@@ -120,6 +154,34 @@ The plugin adds a `vite` section under `cli` in `neutralino.config.json`:
   }
 }
 ```
+
+#### Package Manager
+
+The `cli.vite.packageManager` option tells the plugin which package manager your
+project uses. Supported values: `"npm"` (default), `"pnpm"`, `"yarn"`, `"bun"`.
+
+```json
+{
+  "cli": {
+    "vite": {
+      "projectPath": "/vite-src/",
+      "packageManager": "pnpm"
+    }
+  }
+}
+```
+
+It is used by:
+
+- **`neu vite create`** – scaffolds projects (`create-vite`, `sv`) and installs
+  dependencies with the configured manager.
+- **`neu vite dev`** – launches the NeutralinoJS app window through the
+  configured manager's runner.
+
+> [!NOTE]
+> `neu vite build` does not use the package manager at all: it reads the
+> `build` script from `vite-src/package.json` and executes it directly, so it
+> works identically regardless of the configured value.
 
 ## Requirements
 

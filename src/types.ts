@@ -71,4 +71,5 @@ export interface CreateData {
   installer: TemplateInstaller;
   installDependencies: boolean;
   openAppAfterCreation: boolean;
+  packageManager?: import("./utils/pm").PackageManager;
 }

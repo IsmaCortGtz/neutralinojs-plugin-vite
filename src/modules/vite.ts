@@ -4,6 +4,7 @@ import path from 'node:path';
 import c from 'picocolors';
 import { log, raw, warn } from '@/utils/log';
 import neu from '@/modules/neu';
+import { resolvePackageManager } from '@/utils/pm';
 var vite: any = null;
 
 export const configNames = [
@@ -73,7 +74,7 @@ export async function loadViteConfig(projectPath: string) {
   return config;
 }
 
-export async function startServer(viteProjectRoot: string) {
+export async function startServer(viteProjectRoot: string, packageManager?: ReturnType<typeof resolvePackageManager>) {
   const neuRoot = process.cwd();
   const vite = importVite(viteProjectRoot);
   const config = await loadViteConfig(viteProjectRoot);
@@ -107,11 +108,11 @@ export async function startServer(viteProjectRoot: string) {
     }
     if (keyStr === 'o') {
       log('Opening new app window...');
-      const newNeu = await neu.open(url, neuRoot);
+      const newNeu = await neu.open(url, neuRoot, packageManager);
       server.neutralinoAuthPorts[newNeu.uuid] = newNeu.port;
     }
   });
 
-  const newNeu = await neu.open(url, neuRoot);
+  const newNeu = await neu.open(url, neuRoot, packageManager);
   server.neutralinoAuthPorts[newNeu.uuid] = newNeu.port;
 }

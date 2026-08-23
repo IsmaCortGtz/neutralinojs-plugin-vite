@@ -6,8 +6,9 @@ import { spawn } from 'node:child_process';
 import { findPort } from '@/utils/findPort';
 import { log, error, icon } from '@/utils/log';
 import constants from '@/utils/constants';
+import { resolvePackageManager, runNeuCommand } from '@/utils/pm';
 
-export async function open(url: string, cwd: string = process.cwd()) {
+export async function open(url: string, cwd: string = process.cwd(), packageManager?: ReturnType<typeof resolvePackageManager>) {
   // Open log files for stdout and stderr
   const out = fs.openSync(path.join(cwd, 'neu-cli.log'), 'a');
   const err = fs.openSync(path.join(cwd, 'neu-cli.err.log'), 'a');
@@ -18,7 +19,9 @@ export async function open(url: string, cwd: string = process.cwd()) {
   newUrl.searchParams.append('neutralinoViteUid', uuid);
 
   const isWindows = process.platform === 'win32';
-  const neuProcess = spawn('npx', ['neu', 'run', '--', `--url=${newUrl.toString()}`, `--port=${port}`, '--logging-write-to-log-file=false', '--logging-enabled=true'], { cwd, shell: isWindows, stdio: ['ignore', out, err] });
+  const pm = packageManager ?? resolvePackageManager(undefined);
+  const { cmd, args } = runNeuCommand(pm, ['run', '--', `--url=${newUrl.toString()}`, `--port=${port}`, '--logging-write-to-log-file=false', '--logging-enabled=true']);
+  const neuProcess = spawn(cmd, args, { cwd, shell: isWindows, stdio: ['ignore', out, err] });
 
   neuProcess.on('spawn', () => {
     log(`NeutralinoJS app started with UID: ${uuid}`);

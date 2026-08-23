@@ -1,7 +1,8 @@
 import { CreateData, NeuPluginModules } from "@/types";
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import fs from 'node:fs';
 import path from 'node:path';
+import { createSvelteKitCommand, createViteCommand, resolvePackageManager } from "@/utils/pm";
 
 class BaseInstaller {
   protected projectData: CreateData;
@@ -31,12 +32,9 @@ class BaseInstaller {
 
 export class ViteInstaller extends BaseInstaller {
   public async scaffold() {
-    execSync(
-      `npm create vite@latest ${this.projectData.packageName} -- --template ${this.projectData.variant} --no-interactive`,
-      {
-        stdio: ['ignore', 'ignore', 'inherit']
-      }
-    );
+    const pm = this.projectData.packageManager ?? resolvePackageManager(undefined);
+    const { cmd, args } = createViteCommand(pm, this.projectData.packageName, this.projectData.variant);
+    spawnSync(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
   }
 
   public async patchHtml(targetDir: string) {
@@ -52,13 +50,9 @@ export class ViteInstaller extends BaseInstaller {
 
 export class SvelteInstaller extends BaseInstaller {
   public async scaffold() {
-    const template = this.projectData.variant === 'no-types' ? '--no-types' : `--types ${this.projectData.variant}`;
-    execSync(
-      `npx sv create --template minimal ${template} --install npm ${this.projectData.packageName} --no-add-ons --no-dir-check`,
-      {
-        stdio: ['ignore', 'ignore', 'inherit']
-      }
-    );
+    const pm = this.projectData.packageManager ?? resolvePackageManager(undefined);
+    const { cmd, args } = createSvelteKitCommand(pm, this.projectData.variant, this.projectData.packageName);
+    spawnSync(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
   }
 
   public async patchHtml(targetDir: string) {
